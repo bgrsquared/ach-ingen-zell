@@ -53,8 +53,8 @@ d3_request.csv("data/placenames_de.tsv", (d)=> {
   });
 
   const readyData = [];
-  let grandTotal = 0;
   suffixList.map(sfx => {
+    let grandTotal = 0;
     const myRegexp = new RegExp(sfx.join('$|') + '$');
     const filterFunction = str => str.name.match(myRegexp);
     let maxPercent = 0;
