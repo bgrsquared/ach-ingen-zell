@@ -5,11 +5,10 @@ export default class App extends React.Component {
   render() {
     const { data } = this.props;
 
-    const maps = this.props.suffixList.map((suffix)=> {
+    const maps = data.map((d, i) => {
         return <Map
-          key={suffix}
-          data={this.props.data}
-          suffix={suffix}
+          key={'map' + i}
+          data={d}
         />
       }
     );

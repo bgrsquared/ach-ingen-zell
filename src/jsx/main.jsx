@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import _ from 'lodash';
 
 import d3_request from 'd3-request';
 import d3_geo from 'd3-geo';
@@ -30,13 +29,18 @@ d3_request.csv("data/placenames_de.tsv", (d)=> {
     [x.x, x.y] = projection([+x.longitude, +x.latitude]);
   });
 
-  let hbData = hexbin(d);
-  const hbDataTerse = [];
-  hbData.forEach((x)=> {
-    hbDataTerse.push({
+  const hbDataFull = hexbin(d);
+  const hbDataFullTerse = {};
+  const fullLengthMap = new Map();
+
+  hbDataFull.forEach((x)=> {
+    fullLengthMap.set(`${x.i}/${x.j}`, x.length);
+    hbDataFullTerse[`${x.i}/${x.j}`] = ({
       id: `${x.i}/${x.j}`,
-      names: x.map(town => town.name),
-      length: x.length,
+      names: [], // x.map(town => town.name),
+      length: 0, // x.length,
+      fullLength: x.length,
+      percentage: 0,
       x: x.x,
       y: x.y
     });
@@ -48,8 +52,47 @@ d3_request.csv("data/placenames_de.tsv", (d)=> {
     return 0;
   });
 
+  const readyData = [];
+  let grandTotal = 0;
+  suffixList.map(sfx => {
+    const myRegexp = new RegExp(sfx.join('$|') + '$');
+    const filterFunction = str => str.name.match(myRegexp);
+    let maxPercent = 0;
+
+    const hbData = hexbin(d.filter(filterFunction));
+    const hbDataTerse = {};
+    hbData.forEach((x)=> {
+      const fullLength = fullLengthMap.get(`${x.i}/${x.j}`);
+      const percentage = x.length / fullLength;
+      if (fullLength > 20) {
+        maxPercent = Math.max(maxPercent, percentage);
+      }
+      grandTotal += x.length;
+      hbDataTerse[`${x.i}/${x.j}`] = ({
+        id: `${x.i}/${x.j}`,
+        names: x.map(town => town.name),
+        length: x.length,
+        fullLength: fullLength,
+        percentage,
+        x: x.x,
+        y: x.y
+      });
+    });
+
+    readyData.push({
+      suffix: sfx,
+      maxPercent,
+      grandTotal,
+      tiles: Object.assign(
+        {},
+        hbDataFullTerse,
+        hbDataTerse)
+    });
+  });
+
   ReactDOM.render(
-    <App suffixList={suffixList} data={hbDataTerse}/>,
+    <App data={readyData}/>,
     document.getElementById('app')
   );
-});
+})
+;
